@@ -1,0 +1,32 @@
+{
+  "name": "notion-samepage",
+  "version": "1.0.0",
+  "description": "Official Notion client into the inter-tool protocol, SamePage.",
+  "main": "./dist/index.js",
+  "scripts": {
+    "postinstall": "patch-package --patch-dir node_modules/samepage/patches",
+    "start": "npx samepage dev",
+    "test": "npx samepage test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samepage-network/notion-samepage.git"
+  },
+  "keywords": [
+    "Notion",
+    "SamePage"
+  ],
+  "author": {
+    "name": "SamePage",
+    "email": "support@samepage.network",
+    "url": "https://samepage.network"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/samepage-network/notion-samepage/issues"
+  },
+  "homepage": "https://github.com/samepage-network/notion-samepage#readme",
+  "dependencies": {
+    "samepage": "^0.48.0"
+  }
+}
