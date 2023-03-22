@@ -1,0 +1,22 @@
+diff --git a/node_modules/@notionhq/client/build/src/api-endpoints.d.ts b/node_modules/@notionhq/client/build/src/api-endpoints.d.ts
+index ee6be1c..efcf29e 100644
+--- a/node_modules/@notionhq/client/build/src/api-endpoints.d.ts
++++ b/node_modules/@notionhq/client/build/src/api-endpoints.d.ts
+@@ -72,7 +72,7 @@ type BooleanFormulaPropertyResponse = {
+     boolean: boolean | null;
+ };
+ type FormulaPropertyResponse = StringFormulaPropertyResponse | DateFormulaPropertyResponse | NumberFormulaPropertyResponse | BooleanFormulaPropertyResponse;
+-type AnnotationResponse = {
++export type AnnotationResponse = {
+     bold: boolean;
+     italic: boolean;
+     strikethrough: boolean;
+@@ -1760,7 +1760,7 @@ type DateRequest = {
+     end?: string | null;
+     time_zone?: TimeZoneRequest | null;
+ };
+-type RichTextItemRequest = {
++export type RichTextItemRequest = {
+     text: {
+         content: string;
+         link?: {

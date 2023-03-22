@@ -4,7 +4,7 @@
   "description": "Official Notion client into the inter-tool protocol, SamePage.",
   "main": "./dist/index.js",
   "scripts": {
-    "postinstall": "patch-package --patch-dir node_modules/samepage/patches",
+    "postinstall": "patch-package --patch-dir node_modules/samepage/patches && patch-package",
     "start": "npx samepage dev",
     "test": "npx samepage test"
   },
@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/samepage-network/notion-samepage#readme",
   "dependencies": {
-    "@notionhq/client": "^2.2.3",
-    "samepage": "^0.48.0"
+    "@notionhq/client": "2.2.3",
+    "samepage": "^0.48.5"
   }
 }
