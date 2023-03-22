@@ -111,7 +111,7 @@ const blockContentToAtJson = ({
   const { content: _content, annotations } = combineAtJsons(
     rich_text.map((rt) => richTextToAtJson(rt, notebookUuid))
   );
-  const content = _content || NULL_TOKEN;
+  const content = `${_content}\n`;
   const end = content.length + offset;
   return {
     content,
@@ -206,6 +206,95 @@ const toAtJson = ({
                 ] as Annotation[]
               ).concat(annotations),
             };
+          } else if (n.type === "to_do") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "audio") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "bookmark") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "code") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "divider") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "breadcrumb") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "file") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "embed") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "callout") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "image") {
+            return { content: "", annotations: [] };
+          } else if (n.type === "video") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "pdf") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "table_of_contents") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "toggle") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "child_page") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "child_database") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "column_list") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "column") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "quote") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "equation") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "heading_1") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "heading_2") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "heading_3") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "link_preview" ) {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "link_to_page") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "template") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "synced_block") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "table") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "table_row") {
+            // TODO
+            return { content: "", annotations: [] };
+          } else if (n.type === "unsupported") {
+            // TODO
+            return { content: "", annotations: [] };
           } else {
             return { content: "", annotations: [] };
           }

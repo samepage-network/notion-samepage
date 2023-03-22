@@ -33,7 +33,9 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
       annotations: Annotation[];
     }[] = [];
     annotation.annotations.forEach((anno) => {
-      const { start, end } = anno;
+      const { start: _start, end: _end } = anno;
+      const start = _start - annotation.start;
+      const end = _end - annotation.start;
       const annotations: Annotation[] = [];
       const lastItem = preRichTextItems[preRichTextItems.length - 1];
       const lastItemIndex = !lastItem ? 0 : lastItem.end;
