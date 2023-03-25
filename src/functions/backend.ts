@@ -6,10 +6,6 @@ import toAtJson from "../utils/toAtJson";
 import toUuid from "../utils/toUuid";
 import applyState from "src/utils/applyState";
 
-const notion = new NotionClient({
-  auth: process.env.NOTION_INTEGRATION_TOKEN,
-});
-
 const zMessage = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SETUP"), data: z.object({}).optional() }),
   z.object({
@@ -32,6 +28,9 @@ const zMessage = z.discriminatedUnion("type", [
 
 const logic = async (args: { type: string; data: unknown }) => {
   const { type, data } = zMessage.parse(args);
+  const notion = new NotionClient({
+    auth: process.env.NOTION_INTEGRATION_TOKEN,
+  });
   switch (type) {
     case "SETUP": {
       const response = await notion.users.me({}).catch(() => false as const);
