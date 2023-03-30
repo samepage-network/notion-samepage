@@ -7,9 +7,10 @@ const logic = async ({ code, state: _ }: { code: string; state: string }) => {
     {
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.NODE_ENV === "production"
+      redirect_uri:
+        process.env.NODE_ENV === "production"
           ? "https://samepage.network/oauth/notion"
-          : "https://samepage-app.ngrok.io/oauth/notion"
+          : "https://samepage.ngrok.io/oauth/notion",
     },
     {
       headers: {
@@ -20,10 +21,10 @@ const logic = async ({ code, state: _ }: { code: string; state: string }) => {
     }
   );
   return {
-    data,
     accessToken: data.access_token,
     app: 4,
     workspace: data.workspace_id,
+    suggestExtension: true,
   };
 };
 
