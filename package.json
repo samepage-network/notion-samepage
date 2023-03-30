@@ -1,6 +1,6 @@
 {
   "name": "notion-samepage",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Official Notion client into the inter-tool protocol, SamePage.",
   "main": "./dist/index.js",
   "scripts": {
