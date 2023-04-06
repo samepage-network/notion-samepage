@@ -2,8 +2,8 @@ import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxy
 import { Client as NotionClient } from "@notionhq/client";
 import { zInitialSchema } from "samepage/internal/types";
 import { z } from "zod";
-import toAtJson from "../utils/toAtJson";
-import toUuid from "../utils/toUuid";
+import toAtJson from "../../src/utils/toAtJson";
+import toUuid from "../../src/utils/toUuid";
 import applyState from "src/utils/applyState";
 
 const zMessage = z.discriminatedUnion("type", [
@@ -106,7 +106,7 @@ const logic = async (args: { type: string; data: unknown }) => {
         });
     }
     case "APPLY_STATE": {
-      return applyState(data)
+      return applyState(data.notebookPageId, data.state)
         .then(() => ({ data: "", success: true }))
         .catch((e) => ({ data: e.message, success: false }));
     }

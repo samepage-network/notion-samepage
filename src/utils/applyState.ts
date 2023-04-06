@@ -118,11 +118,7 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
   }
 };
 
-const applyState = async (data: {
-  notebookPageId: string;
-  state: InitialSchema;
-}) => {
-  const { notebookPageId, state } = data;
+const applyState = async (notebookPageId: string, state: InitialSchema) => {
   const rootUuid = toUuid(notebookPageId);
   const expectedTree: SamepageNode[] = [];
   state.annotations.forEach((anno) => {

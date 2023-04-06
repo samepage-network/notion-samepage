@@ -198,10 +198,7 @@ test("second block annotations", async () => {
     ],
   });
 
-  await applyState({
-    notebookPageId: page.id,
-    state,
-  });
+  await applyState(page.id, state);
 
   const {
     results: [first, second],
