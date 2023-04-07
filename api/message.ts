@@ -1,6 +1,5 @@
 import apiClient, { apiPost } from "samepage/internal/apiClient";
 import {
-  InitialSchema,
   JSONData,
   Schema,
   zInitialSchema,
@@ -193,6 +192,9 @@ const message = async (_args: unknown) => {
     } else if (args.operation === "SHARE_PAGE") {
       // TODO: How do we dispatch a notification and
       // allow a choice between "Accept" and "Reject"?
+      // EMAIL! EMAIL IS THE ANSWER!!!
+      // - Both buttons are in the email and take you to a public SamePage route. 
+      // - That route then performs the accept or reject, redirecting you to the notebook. BOOM!
     } else if (args.operation === "SHARE_PAGE_RESPONSE") {
       // Usueally just an in-app popup saying "Accepted" or "Rejected"
     } else if (args.operation === "SHARE_PAGE_UPDATE") {

@@ -1,5 +1,5 @@
 import { Annotation, InitialSchema } from "samepage/internal/types";
-import notionClient from "./notionClient";
+import defaultNotionClient from "./notionClient";
 import toUuid from "./toUuid";
 import type {
   BlockObjectResponse,
@@ -118,7 +118,11 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
   }
 };
 
-const applyState = async (notebookPageId: string, state: InitialSchema) => {
+const applyState = async (
+  notebookPageId: string,
+  state: InitialSchema,
+  notionClient = defaultNotionClient
+) => {
   const rootUuid = toUuid(notebookPageId);
   const expectedTree: SamepageNode[] = [];
   state.annotations.forEach((anno) => {

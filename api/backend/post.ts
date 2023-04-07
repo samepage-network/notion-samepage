@@ -26,10 +26,14 @@ const zMessage = z.discriminatedUnion("type", [
   }),
 ]);
 
-const logic = async (args: { type: string; data: unknown }) => {
+const logic = async (args: {
+  type: string;
+  data: unknown;
+  authorization: string;
+}) => {
   const { type, data } = zMessage.parse(args);
   const notion = new NotionClient({
-    auth: process.env.NOTION_INTEGRATION_TOKEN,
+    auth: args.authorization,
   });
   switch (type) {
     case "SETUP": {
@@ -106,7 +110,7 @@ const logic = async (args: { type: string; data: unknown }) => {
         });
     }
     case "APPLY_STATE": {
-      return applyState(data.notebookPageId, data.state)
+      return applyState(data.notebookPageId, data.state, notion)
         .then(() => ({ data: "", success: true }))
         .catch((e) => ({ data: e.message, success: false }));
     }
