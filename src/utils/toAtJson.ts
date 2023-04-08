@@ -1,10 +1,10 @@
 import { Annotation, InitialSchema } from "samepage/internal/types";
-import notionClient from "./notionClient";
 import { combineAtJsons, NULL_TOKEN } from "samepage/utils/atJsonParser";
 import type {
   RichTextItemResponse,
   AnnotationResponse,
 } from "@notionhq/client/build/src/api-endpoints";
+import { Client as NotionClient } from "@notionhq/client";
 
 const getAnnotations = (annotations: AnnotationResponse, end: number) =>
   ([] as Annotation[])
@@ -129,11 +129,13 @@ const toAtJson = ({
   startIndex = 0,
   level = 0,
   notebookUuid,
+  notionClient,
 }: {
   block_id: string;
   startIndex?: number;
   level?: number;
   notebookUuid: string;
+  notionClient: NotionClient;
 }): Promise<InitialSchema> =>
   notionClient.blocks.children.list({ block_id }).then((r) =>
     r.results
@@ -274,7 +276,7 @@ const toAtJson = ({
           } else if (n.type === "heading_3") {
             // TODO
             return { content: "", annotations: [] };
-          } else if (n.type === "link_preview" ) {
+          } else if (n.type === "link_preview") {
             // TODO
             return { content: "", annotations: [] };
           } else if (n.type === "link_to_page") {
@@ -307,6 +309,7 @@ const toAtJson = ({
                 level: level + 1,
                 startIndex: content.length,
                 notebookUuid,
+                notionClient,
               })
             : { content: "", annotations: [] };
         return {

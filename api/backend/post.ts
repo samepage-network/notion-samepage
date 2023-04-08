@@ -1,4 +1,5 @@
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
+import getAccessToken from "samepage/backend/getAccessToken";
 import { Client as NotionClient } from "@notionhq/client";
 import { zInitialSchema } from "samepage/internal/types";
 import { z } from "zod";
@@ -32,12 +33,20 @@ const logic = async (args: {
   authorization: string;
 }) => {
   const { type, data } = zMessage.parse(args);
-  const notion = new NotionClient({
-    auth: args.authorization,
+
+  const accessToken = args.authorization.startsWith("Basic")
+    ? await getAccessToken({
+        authorization: args.authorization,
+      }).then(({ accessToken }) => accessToken)
+    : args.authorization.replace(/^Bearer /, "");
+  const notionClient = new NotionClient({
+    auth: accessToken,
   });
   switch (type) {
     case "SETUP": {
-      const response = await notion.users.me({}).catch(() => false as const);
+      const response = await notionClient.users
+        .me({})
+        .catch(() => false as const);
       return response &&
         response.type === "bot" &&
         !!response.bot.workspace_name
@@ -57,7 +66,7 @@ const logic = async (args: {
         notebookPageId: string;
       };
       if (/^\/?[a-f0-9]{32}$/.test(path)) {
-        return notion.pages
+        return notionClient.pages
           .create({
             parent: { database_id: path.replace(/^\//, "") },
             properties: {
@@ -68,7 +77,7 @@ const logic = async (args: {
       } else if (/[a-f0-9]{32}$/.test(path)) {
         const page_id = /[a-f0-9]{32}$/.exec(path)?.[0];
         if (page_id) {
-          return notion.pages
+          return notionClient.pages
             .create({
               parent: { page_id },
               properties: {
@@ -87,7 +96,7 @@ const logic = async (args: {
       const { notebookPageId } = data as { notebookPageId: string };
       const page_id = /[a-f0-9]{32}$/.exec(notebookPageId)?.[0];
       if (page_id)
-        return notion.pages
+        return notionClient.pages
           .update({
             page_id,
             archived: true,
@@ -102,6 +111,7 @@ const logic = async (args: {
       return toAtJson({
         block_id: toUuid(notebookPageId),
         notebookUuid,
+        notionClient,
       })
         .then((data) => ({ success: true, data }))
         .catch((error) => {
@@ -110,7 +120,7 @@ const logic = async (args: {
         });
     }
     case "APPLY_STATE": {
-      return applyState(data.notebookPageId, data.state, notion)
+      return applyState(data.notebookPageId, data.state, notionClient)
         .then(() => ({ data: "", success: true }))
         .catch((e) => ({ data: e.message, success: false }));
     }
