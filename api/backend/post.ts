@@ -1,136 +1,208 @@
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
 import getAccessToken from "samepage/backend/getAccessToken";
 import { Client as NotionClient } from "@notionhq/client";
-import { zInitialSchema } from "samepage/internal/types";
+import {
+  BackendRequest,
+  zSamePageSchema,
+  zSamePageState,
+} from "samepage/internal/types";
 import { z } from "zod";
 import toAtJson from "../../src/utils/toAtJson";
 import toUuid from "../../src/utils/toUuid";
-import applyState from "src/utils/applyState";
+import applyState, { getRichTextItemsRequest } from "src/utils/applyState";
+import {
+  CreatePageParameters,
+  DatabaseObjectResponse,
+  PageObjectResponse,
+} from "@notionhq/client/build/src/api-endpoints";
+import debug from "samepage/utils/debugger";
+const log = debug("api:backend");
 
 const zMessage = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("SETUP"), data: z.object({}).optional() }),
+  z.object({ type: z.literal("SETUP") }),
   z.object({
-    type: z.literal("CREATE_PAGE"),
-    data: z.object({ notebookPageId: z.string(), path: z.string() }),
+    type: z.literal("OPEN_PAGE"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    type: z.literal("ENSURE_PAGE_BY_TITLE"),
+    title: zSamePageSchema,
+    path: z.string().optional(),
   }),
   z.object({
     type: z.literal("DELETE_PAGE"),
-    data: z.object({ notebookPageId: z.string() }),
+    notebookPageId: z.string(),
   }),
   z.object({
-    type: z.literal("CALCULATE_STATE"),
-    data: z.object({ notebookPageId: z.string(), notebookUuid: z.string() }),
+    type: z.literal("ENCODE_STATE"),
+    notebookPageId: z.string(),
+    notebookUuid: z.string(),
   }),
   z.object({
-    type: z.literal("APPLY_STATE"),
-    data: z.object({ notebookPageId: z.string(), state: zInitialSchema }),
+    type: z.literal("DECODE_STATE"),
+    notebookPageId: z.string(),
+    state: zSamePageState,
   }),
 ]);
 
-const logic = async (args: {
-  type: string;
-  data: unknown;
-  authorization: string;
-}) => {
-  const { type, data } = zMessage.parse(args);
+const logic = async (args: BackendRequest<typeof zMessage>) => {
+  const { authorization, ...data } = args;
+  if (!authorization) {
+    throw new Error("Unauthorized");
+  }
+  log("backend post", data.type);
 
-  const accessToken = args.authorization.startsWith("Basic")
+  const accessToken = authorization.startsWith("Basic")
     ? await getAccessToken({
-        authorization: args.authorization,
+        authorization,
       }).then(({ accessToken }) => accessToken)
-    : args.authorization.replace(/^Bearer /, "");
+    : authorization.replace(/^Bearer /, "");
   const notionClient = new NotionClient({
     auth: accessToken,
   });
-  switch (type) {
-    case "SETUP": {
-      const response = await notionClient.users
-        .me({})
-        .catch(() => false as const);
-      return response &&
-        response.type === "bot" &&
-        !!response.bot.workspace_name
-        ? {
-            data: {
-              app: "Notion",
-              workspace: response.bot.workspace_name,
-            },
-          }
-        : {
-            data: false,
-          };
-    }
-    case "CREATE_PAGE": {
-      const { path, notebookPageId } = data as {
-        path: string;
-        notebookPageId: string;
-      };
-      if (/^\/?[a-f0-9]{32}$/.test(path)) {
-        return notionClient.pages
-          .create({
-            parent: { database_id: path.replace(/^\//, "") },
-            properties: {
-              title: { title: [{ text: { content: notebookPageId } }] },
-            },
-          })
-          .then((page) => ({ data: page.id }));
-      } else if (/[a-f0-9]{32}$/.test(path)) {
-        const page_id = /[a-f0-9]{32}$/.exec(path)?.[0];
-        if (page_id) {
+  try {
+    switch (data.type) {
+      case "SETUP": {
+        const response = await notionClient.users
+          .me({})
+          .catch(() => false as const);
+        return response &&
+          response.type === "bot" &&
+          !!response.bot.workspace_name
+          ? {
+              data: {
+                app: "Notion",
+                workspace: response.bot.workspace_name,
+              },
+            }
+          : {
+              data: false,
+            };
+      }
+      case "ENSURE_PAGE_BY_TITLE": {
+        const { path = "", title } = data;
+        const pages = await notionClient.search({
+          query: title.content,
+          filter: {
+            property: "object",
+            value: "page",
+          },
+        });
+        const existingPage = pages.results.find(
+          (p) =>
+            "properties" in p &&
+            p.properties.title.type === "title" &&
+            Array.isArray(p.properties.title.title) &&
+            p.properties.title.title[0].plain_text === title.content
+        );
+        if (existingPage) {
+          return { notebookPageId: existingPage.id, preExisting: true };
+        }
+        const properties: CreatePageParameters["properties"] = {
+          title: {
+            title: getRichTextItemsRequest({
+              text: title.content,
+              annotation: {
+                start: 0,
+                end: title.content.length,
+                annotations: title.annotations,
+              },
+            }),
+          },
+        };
+        if (/^\/?[a-f0-9]{32}$/.test(path)) {
           return notionClient.pages
             .create({
-              parent: { page_id },
-              properties: {
-                title: { title: [{ text: { content: notebookPageId } }] },
+              parent: {
+                database_id: path.replace(/^\//, ""),
               },
-            })
-            .then((page) => ({ data: page.id }));
+              properties,
+            } as CreatePageParameters)
+            .then((page) => ({ notebookPageId: page.id }));
+        } else if (/[a-f0-9]{32}$/.test(path)) {
+          const page_id = /[a-f0-9]{32}$/.exec(path)?.[0];
+          if (page_id) {
+            return notionClient.pages
+              .create({
+                parent: { page_id },
+                properties,
+              })
+              .then((page) => ({ notebookPageId: page.id }));
+          } else {
+            throw new Error(`Invalid path: ${path}`);
+          }
         } else {
-          throw new Error(`Invalid path: ${path}`);
+          const { results } = await notionClient.search({});
+          const parent = results.find(
+            (result): result is PageObjectResponse | DatabaseObjectResponse =>
+              "parent" in result &&
+              result.parent.type === "workspace" &&
+              result.parent.workspace
+          );
+          if (!parent) {
+            throw new Error(`No root level page or database found`);
+          }
+          if (parent.object === "database") {
+            const { id } = await notionClient.pages.create({
+              parent: { database_id: parent.id },
+              properties,
+            } as CreatePageParameters);
+            return { notebookPageId: id };
+          }
+          const { id } = await notionClient.pages.create({
+            parent: { page_id: parent.id },
+            properties,
+          } as CreatePageParameters);
+          return { notebookPageId: id };
         }
-      } else {
-        return { data: "" };
       }
-    }
-    case "DELETE_PAGE": {
-      const { notebookPageId } = data as { notebookPageId: string };
-      const page_id = /[a-f0-9]{32}$/.exec(notebookPageId)?.[0];
-      if (page_id)
+      case "DELETE_PAGE": {
+        const { notebookPageId } = data;
         return notionClient.pages
           .update({
-            page_id,
+            page_id: notebookPageId,
             archived: true,
           })
-          .then(() => ({ data: page_id }));
-      else {
-        throw new Error(`Invalid notebook page id: ${notebookPageId}`);
+          .then(() => ({ data: notebookPageId }));
       }
-    }
-    case "CALCULATE_STATE": {
-      const { notebookPageId, notebookUuid } = data;
-      return toAtJson({
-        block_id: toUuid(notebookPageId),
-        notebookUuid,
-        notionClient,
-      })
-        .then((data) => ({ success: true, data }))
-        .catch((error) => {
-          console.error(error);
-          return { success: false, data: error.message };
+      case "OPEN_PAGE": {
+        const { notebookPageId } = data;
+        const page = await notionClient.pages.retrieve({
+          page_id: notebookPageId,
         });
+        return "url" in page
+          ? {
+              url: page.url,
+            }
+          : {
+              url: "",
+            };
+      }
+      case "ENCODE_STATE": {
+        const { notebookPageId, notebookUuid } = data;
+        return toAtJson({
+          block_id: toUuid(notebookPageId),
+          notebookUuid,
+          notionClient,
+        }).then((data) => ({ $body: data }));
+      }
+      case "DECODE_STATE": {
+        await applyState(data.notebookPageId, data.state.$body, notionClient);
+        return { success: true };
+      }
+      default:
+        throw new Error(`Unknown type ${data["type"]}`);
     }
-    case "APPLY_STATE": {
-      return applyState(data.notebookPageId, data.state, notionClient)
-        .then(() => ({ data: "", success: true }))
-        .catch((e) => ({ data: e.message, success: false }));
-    }
-    default:
-      throw new Error(`Unknown type ${type}`);
+  } catch (e) {
+    log("error", e);
+    throw new Error(`Backend request ${data.type} failed`, { cause: e });
   }
 };
 
 const backend = createAPIGatewayProxyHandler({
   logic,
+  // @ts-ignore
+  bodySchema: zMessage,
   allowedOrigins: [/^https:\/\/([\w]+\.)?notion\.so/],
 });
 

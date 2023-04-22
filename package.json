@@ -28,7 +28,8 @@
   "homepage": "https://github.com/samepage-network/notion-samepage#readme",
   "dependencies": {
     "@notionhq/client": "2.2.3",
-    "samepage": "^0.59.2"
+    "samepage": "^0.64.6",
+    "xml-js": "^1.6.11"
   },
   "samepage": {
     "install": {

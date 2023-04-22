@@ -24,78 +24,82 @@ type NotionNode = {
   level: number;
 };
 
-const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
-  const { text, viewType, annotation } = node;
-  const getRichTextItems = (): RichTextItemRequest[] => {
-    const preRichTextItems: {
-      start: number;
-      end: number;
-      annotations: Annotation[];
-    }[] = [];
-    annotation.annotations.forEach((anno) => {
-      const { start: _start, end: _end } = anno;
-      const start = _start - annotation.start;
-      const end = _end - annotation.start;
-      const annotations: Annotation[] = [];
-      const lastItem = preRichTextItems[preRichTextItems.length - 1];
-      const lastItemIndex = !lastItem ? 0 : lastItem.end;
-      if (start > lastItemIndex) {
-        preRichTextItems.push({
-          start: lastItemIndex,
-          end: start,
-          annotations: [],
-        });
-      } else if (start < lastItemIndex) {
-        if (start === lastItem.start) {
-          preRichTextItems.pop();
-        } else {
-          lastItem.end = start;
-        }
-        annotations.push(...(lastItem.annotations || []));
-      }
-      preRichTextItems.push({
-        start,
-        end,
-        annotations: annotations.concat(anno),
-      });
-    });
+export const getRichTextItemsRequest = ({
+  annotation,
+  text,
+}: Pick<SamepageNode, "text" | "annotation">): RichTextItemRequest[] => {
+  const preRichTextItems: {
+    start: number;
+    end: number;
+    annotations: Annotation[];
+  }[] = [];
+  annotation.annotations.forEach((anno) => {
+    const { start: _start, end: _end } = anno;
+    const start = _start - annotation.start;
+    const end = _end - annotation.start;
+    const annotations: Annotation[] = [];
     const lastItem = preRichTextItems[preRichTextItems.length - 1];
     const lastItemIndex = !lastItem ? 0 : lastItem.end;
-    if (text.length > lastItemIndex) {
+    if (start > lastItemIndex) {
       preRichTextItems.push({
         start: lastItemIndex,
-        end: text.length,
+        end: start,
         annotations: [],
       });
+    } else if (start < lastItemIndex) {
+      if (start === lastItem.start) {
+        preRichTextItems.pop();
+      } else {
+        lastItem.end = start;
+      }
+      annotations.push(...(lastItem.annotations || []));
     }
-    return preRichTextItems.map((item) => ({
-      type: "text",
-      text: {
-        content: text.slice(item.start, item.end),
-      },
-      annotations: item.annotations.reduce((acc, anno) => {
-        if (anno.type === "bold") {
-          return { ...acc, bold: true };
-        } else if (anno.type === "italics") {
-          return { ...acc, italic: true };
-        } else if (anno.type === "strikethrough") {
-          return { ...acc, strikethrough: true };
-        } else if (anno.type === "inline") {
-          return { ...acc, code: true };
-          // } else if (anno.type === "underline") {
-          // } else if (anno.type === "color") {
-        } else {
-          return acc;
-        }
-      }, {}),
-    }));
-  };
+    preRichTextItems.push({
+      start,
+      end,
+      annotations: annotations.concat(anno),
+    });
+  });
+  const lastItem = preRichTextItems[preRichTextItems.length - 1];
+  const lastItemIndex = !lastItem ? 0 : lastItem.end;
+  if (text.length > lastItemIndex) {
+    preRichTextItems.push({
+      start: lastItemIndex,
+      end: text.length,
+      annotations: [],
+    });
+  }
+  return preRichTextItems.map((item) => ({
+    type: "text",
+    text: {
+      content: text.slice(item.start, item.end),
+    },
+    annotations: item.annotations.reduce((acc, anno) => {
+      if (anno.type === "bold") {
+        return { ...acc, bold: true };
+      } else if (anno.type === "italics") {
+        return { ...acc, italic: true };
+      } else if (anno.type === "strikethrough") {
+        return { ...acc, strikethrough: true };
+      } else if (anno.type === "inline") {
+        return { ...acc, code: true };
+        // } else if (anno.type === "underline") {
+        // } else if (anno.type === "color") {
+      } else {
+        return acc;
+      }
+    }, {}),
+  }));
+};
+
+const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
+  const { viewType } = node;
   switch (viewType) {
     case "document": {
       return {
         type: "paragraph",
         paragraph: {
-          rich_text: getRichTextItems(),
+          rich_text: getRichTextItemsRequest(node),
         },
       };
     }
@@ -103,7 +107,7 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
       return {
         type: "bulleted_list_item",
         bulleted_list_item: {
-          rich_text: getRichTextItems(),
+          rich_text: getRichTextItemsRequest(node),
         },
       };
     }
@@ -111,7 +115,7 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
       return {
         type: "numbered_list_item",
         numbered_list_item: {
-          rich_text: getRichTextItems(),
+          rich_text: getRichTextItemsRequest(node),
         },
       };
     }

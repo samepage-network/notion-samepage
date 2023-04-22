@@ -6,10 +6,11 @@ import { Client as NotionClient } from "@notionhq/client";
 const message = (args: Record<string, unknown>) => {
   const notionClient = new NotionClient({
     // createBackendClientHandler doesn't pass this in and it should.
-    auth: args.accessToken as string,
+    // @ts-ignore
+    auth: args.credentials.accessToken as string,
   });
   return createBackendClientHandler({
-    applyState: (id, state) => applyState(id, state, notionClient),
+    decodeState: (id, state) => applyState(id, state.$body, notionClient),
     notebookRequestHandler: notebookRequestHandler(notionClient),
     notebookResponseHandler: async () => {},
   })(args);

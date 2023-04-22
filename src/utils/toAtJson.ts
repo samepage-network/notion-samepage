@@ -37,7 +37,7 @@ const getAnnotations = (annotations: AnnotationResponse, end: number) =>
         : []
     );
 
-const richTextToAtJson = (
+export const richTextToAtJson = (
   richText: RichTextItemResponse,
   notebookUuid: string
 ): InitialSchema => {
