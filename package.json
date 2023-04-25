@@ -43,7 +43,17 @@
         },
         {
           "title": "Select Accessible Pages",
-          "children": "image"
+          "children": "image",
+          "props": {
+            "src": "https://samepage.network/assets/select-pages.png"
+          }
+        },
+        {
+          "title": "Navigate to Notion!",
+          "children": "image",
+          "props": {
+            "src": "https://samepage.network/assets/navigate-to-notion.png"
+          }
         }
       ]
     }
