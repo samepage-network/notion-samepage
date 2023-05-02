@@ -99,13 +99,13 @@ export const richTextToAtJson = (
   }
 };
 
-const blockContentToAtJson = ({
+export const blockContentToAtJson = ({
   rich_text,
-  offset,
+  offset = 0,
   notebookUuid,
 }: {
   rich_text: RichTextItemResponse[];
-  offset: number;
+  offset?: number;
   notebookUuid: string;
 }) => {
   const { content: _content, annotations } = combineAtJsons(

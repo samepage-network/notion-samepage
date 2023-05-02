@@ -7,13 +7,14 @@ import {
   zSamePageState,
 } from "samepage/internal/types";
 import { z } from "zod";
-import toAtJson from "../../src/utils/toAtJson";
+import toAtJson, { blockContentToAtJson } from "../../src/utils/toAtJson";
 import toUuid from "../../src/utils/toUuid";
 import applyState, { getRichTextItemsRequest } from "src/utils/applyState";
 import {
   CreatePageParameters,
   DatabaseObjectResponse,
   PageObjectResponse,
+  RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import debug from "samepage/utils/debugger";
 const log = debug("api:backend");
@@ -88,13 +89,21 @@ const logic = async (args: BackendRequest<typeof zMessage>) => {
             value: "page",
           },
         });
-        const existingPage = pages.results.find(
-          (p) =>
-            "properties" in p &&
-            p.properties.title.type === "title" &&
-            Array.isArray(p.properties.title.title) &&
-            p.properties.title.title[0].plain_text === title.content
-        );
+        const existingPage = pages.results.find((p) => {
+          if (!("properties" in p)) return false;
+          const property = Object.values(p.properties).find(
+            (
+              prop
+            ): prop is {
+              type: "title";
+              title: Array<RichTextItemResponse>;
+              id: string;
+            } => prop.type === "title"
+          );
+          if (!property) return false;
+          // TODO convert title to atJson and compare
+          return property.title[0].plain_text === title.content;
+        });
         if (existingPage) {
           return { notebookPageId: existingPage.id, preExisting: true };
         }
@@ -180,11 +189,30 @@ const logic = async (args: BackendRequest<typeof zMessage>) => {
       }
       case "ENCODE_STATE": {
         const { notebookPageId, notebookUuid } = data;
-        return toAtJson({
+        const $body = toAtJson({
           block_id: toUuid(notebookPageId),
           notebookUuid,
           notionClient,
-        }).then((data) => ({ $body: data }));
+        });
+        const properties = await notionClient.pages
+          .retrieve({ page_id: notebookPageId })
+          .then((page) => {
+            if (!("properties" in page)) return {};
+            const properties = Object.entries(page.properties).map(([k, v]) => {
+              if (v.type === "title") {
+                return [
+                  "$title",
+                  blockContentToAtJson({
+                    rich_text: v.title,
+                    notebookUuid,
+                  }),
+                ];
+              }
+              return [k, { content: "", annotations: [] }];
+            });
+            return Object.fromEntries(properties);
+          });
+        return { $body, ...properties };
       }
       case "DECODE_STATE": {
         await applyState(data.notebookPageId, data.state.$body, notionClient);
