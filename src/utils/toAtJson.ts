@@ -1,4 +1,4 @@
-import { Annotation, InitialSchema } from "samepage/internal/types";
+import { Annotation, SamePageSchema } from "samepage/internal/types";
 import { combineAtJsons, NULL_TOKEN } from "samepage/utils/atJsonParser";
 import type {
   RichTextItemResponse,
@@ -40,7 +40,7 @@ const getAnnotations = (annotations: AnnotationResponse, end: number) =>
 export const richTextToAtJson = (
   richText: RichTextItemResponse,
   notebookUuid: string
-): InitialSchema => {
+): SamePageSchema => {
   switch (richText.type) {
     case "text": {
       const {
@@ -112,7 +112,6 @@ export const blockContentToAtJson = ({
     rich_text.map((rt) => richTextToAtJson(rt, notebookUuid))
   );
   const content = `${_content}\n`;
-  const end = content.length + offset;
   return {
     content,
     annotations: annotations.map((a) => ({
@@ -120,7 +119,6 @@ export const blockContentToAtJson = ({
       start: a.start + offset,
       end: a.end + offset,
     })),
-    end,
   };
 };
 
@@ -136,14 +134,14 @@ const toAtJson = ({
   level?: number;
   notebookUuid: string;
   notionClient: NotionClient;
-}): Promise<InitialSchema> =>
+}): Promise<SamePageSchema> =>
   notionClient.blocks.children.list({ block_id }).then((r) =>
     r.results
       .map((n) => async (offset: number) => {
         if (!("type" in n)) return { content: "", annotations: [] };
-        const parseBlock = (): InitialSchema => {
+        const parseBlock = (): SamePageSchema => {
           if (n.type === "paragraph") {
-            const { content, annotations, end } = blockContentToAtJson({
+            const { content, annotations } = blockContentToAtJson({
               rich_text: n.paragraph.rich_text,
               offset,
               notebookUuid,
@@ -154,7 +152,7 @@ const toAtJson = ({
                 [
                   {
                     start: offset,
-                    end,
+                    end: content.length + offset,
                     attributes: {
                       level,
                       viewType: "document",
@@ -165,7 +163,7 @@ const toAtJson = ({
               ).concat(annotations),
             };
           } else if (n.type === "bulleted_list_item") {
-            const { content, annotations, end } = blockContentToAtJson({
+            const { content, annotations } = blockContentToAtJson({
               rich_text: n.bulleted_list_item.rich_text,
               offset,
               notebookUuid,
@@ -176,7 +174,7 @@ const toAtJson = ({
                 [
                   {
                     start: offset,
-                    end,
+                    end: content.length + offset,
                     attributes: {
                       level,
                       viewType: "bullet",
@@ -187,7 +185,7 @@ const toAtJson = ({
               ).concat(annotations),
             };
           } else if (n.type === "numbered_list_item") {
-            const { content, annotations, end } = blockContentToAtJson({
+            const { content, annotations } = blockContentToAtJson({
               rich_text: n.numbered_list_item.rich_text,
               offset,
               notebookUuid,
@@ -198,7 +196,7 @@ const toAtJson = ({
                 [
                   {
                     start: offset,
-                    end,
+                    end: content.length + offset,
                     attributes: {
                       level,
                       viewType: "numbered",
@@ -327,7 +325,7 @@ const toAtJson = ({
               })
             )
           ),
-        Promise.resolve<InitialSchema>({
+        Promise.resolve<SamePageSchema>({
           content: "",
           annotations: [],
         })

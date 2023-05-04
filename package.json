@@ -45,14 +45,14 @@
           "title": "Select Accessible Pages",
           "children": "image",
           "props": {
-            "src": "https://samepage.network/assets/select-pages.png"
+            "src": "/assets/notion/select-pages.png"
           }
         },
         {
           "title": "Navigate to Notion!",
           "children": "image",
           "props": {
-            "src": "https://samepage.network/assets/navigate-to-notion.png"
+            "src": "/assets/notion/navigate-to-notion.png"
           }
         }
       ]

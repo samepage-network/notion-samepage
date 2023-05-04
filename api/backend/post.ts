@@ -37,6 +37,7 @@ const zMessage = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("ENCODE_STATE"),
     notebookPageId: z.string(),
+    // TODO - infer from token
     notebookUuid: z.string(),
   }),
   z.object({
@@ -189,7 +190,7 @@ const logic = async (args: BackendRequest<typeof zMessage>) => {
       }
       case "ENCODE_STATE": {
         const { notebookPageId, notebookUuid } = data;
-        const $body = toAtJson({
+        const $body = await toAtJson({
           block_id: toUuid(notebookPageId),
           notebookUuid,
           notionClient,
@@ -222,7 +223,7 @@ const logic = async (args: BackendRequest<typeof zMessage>) => {
         throw new Error(`Unknown type ${data["type"]}`);
     }
   } catch (e) {
-    log("error", e);
+    console.log("error", e);
     throw new Error(`Backend request ${data.type} failed`, { cause: e });
   }
 };
