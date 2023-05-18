@@ -224,7 +224,9 @@ const logic = async (args: BackendRequest<typeof zMessage>) => {
     }
   } catch (e) {
     console.log("error", e);
-    throw new Error(`Backend request ${data.type} failed`, { cause: e });
+    throw new Error(`Backend request ${data.type} failed`, {
+      cause: e as Error,
+    });
   }
 };
 

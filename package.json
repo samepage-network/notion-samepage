@@ -28,7 +28,7 @@
   "homepage": "https://github.com/samepage-network/notion-samepage#readme",
   "dependencies": {
     "@notionhq/client": "2.2.3",
-    "samepage": "^0.64.6",
+    "samepage": "^0.68.1",
     "xml-js": "^1.6.11"
   },
   "samepage": {
@@ -52,7 +52,7 @@
           "title": "Navigate to Notion!",
           "children": "image",
           "props": {
-            "src": "/assets/notion/navigate-to-notion.png"
+            "src": "/assets/notion/welcome-to-notion.png"
           }
         }
       ]

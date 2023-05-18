@@ -20,13 +20,13 @@ const logic = async ({ code, state: _ }: { code: string; state: string }) => {
       },
     }
   );
-  console.log(data);
   return {
     accessToken: data.access_token,
     app: 4,
     workspace: data.workspace_id,
     label: data.workspace_name,
     suggestExtension: true,
+    postInstall: true,
   };
 };
 
