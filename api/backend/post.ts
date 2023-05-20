@@ -1,6 +1,6 @@
 import createApiBackendPostHandler from "samepage/backend/createApiBackendPostHandler";
 import { Client as NotionClient } from "@notionhq/client";
-import applyState, { getRichTextItemsRequest } from "src/utils/applyState";
+import decodeState, { getRichTextItemsRequest } from "src/utils/decodeState";
 import {
   CreatePageParameters,
   DatabaseObjectResponse,
@@ -13,9 +13,9 @@ const backend = createApiBackendPostHandler({
   getDecodeState:
     ({ accessToken }) =>
     (id, state) =>
-      applyState(
+      decodeState(
         id,
-        state.$body,
+        state,
         new NotionClient({
           auth: accessToken,
         })

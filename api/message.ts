@@ -1,5 +1,5 @@
 import createApiMessageHandler from "samepage/backend/createApiMessageHandler";
-import applyState from "src/utils/applyState";
+import decodeState from "src/utils/decodeState";
 import notebookRequestHandler from "src/utils/notebookRequestHandler";
 import { Client as NotionClient } from "@notionhq/client";
 
@@ -7,9 +7,9 @@ const message = createApiMessageHandler({
   getDecodeState:
     ({ accessToken }) =>
     (id, state) =>
-      applyState(
+      decodeState(
         id,
-        state.$body,
+        state,
         new NotionClient({
           auth: accessToken,
         })

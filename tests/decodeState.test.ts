@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import applyState from "../src/utils/applyState";
+import decodeState from "../src/utils/decodeState";
 import { v4 } from "uuid";
-import { InitialSchema } from "samepage/internal/types";
+import { InitialSchema, SamePageSchema } from "samepage/internal/types";
 import notionClient from "../src/utils/notionClient";
 import type {
   BlockObjectResponse,
@@ -157,7 +157,7 @@ test.beforeAll(() => {
 });
 
 test("second block annotations", async () => {
-  const state: InitialSchema = {
+  const $body: SamePageSchema = {
     content: "First\nSecond block\n",
     annotations: [
       {
@@ -198,7 +198,7 @@ test("second block annotations", async () => {
     ],
   });
 
-  await applyState(page.id, state);
+  await decodeState(page.id, { $body });
 
   const {
     results: [first, second],

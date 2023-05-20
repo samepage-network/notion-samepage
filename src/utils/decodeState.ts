@@ -1,4 +1,9 @@
-import { Annotation, InitialSchema } from "samepage/internal/types";
+import {
+  Annotation,
+  InitialSchema,
+  SamePageSchema,
+  SamePageState,
+} from "samepage/internal/types";
 import defaultNotionClient from "./notionClient";
 import toUuid from "./toUuid";
 import type {
@@ -22,6 +27,7 @@ type NotionNode = {
   children: NotionNode[];
   data: BlockObjectRequest;
   level: number;
+  type: string;
 };
 
 export const getRichTextItemsRequest = ({
@@ -122,17 +128,19 @@ const getExpectedBlockData = (node: SamepageNode): BlockObjectRequest => {
   }
 };
 
-const applyState = async (
+const decodeState = async (
   notebookPageId: string,
-  state: InitialSchema,
+  state: SamePageState,
   notionClient = defaultNotionClient
 ) => {
   const rootUuid = toUuid(notebookPageId);
   const expectedTree: SamepageNode[] = [];
-  state.annotations.forEach((anno) => {
+  state.$body.annotations.forEach((anno) => {
     if (anno.type === "block") {
       const currentBlock: SamepageNode = {
-        text: state.content.slice(anno.start, anno.end).replace(/\n$/, ""),
+        text: state.$body.content
+          .slice(anno.start, anno.end)
+          .replace(/\n$/, ""),
         level: anno.attributes.level,
         viewType: anno.attributes.viewType,
         annotation: {
@@ -166,6 +174,7 @@ const applyState = async (
                     : [],
                   data: r,
                   level,
+                  type: r.type,
                 } as NotionNode)
               : undefined
           )
@@ -181,7 +190,7 @@ const applyState = async (
   const tree = await getTree(rootUuid);
   const actualTree = flattenTree(tree);
   const promises = expectedTree
-    .map((expectedNode, index) => () => {
+    .map((expectedNode, index) => async () => {
       const getLocation = () => {
         const _parentIndex =
           expectedNode.level === 1
@@ -209,6 +218,20 @@ const applyState = async (
         };
       };
       const expectedBlockData = getExpectedBlockData(expectedNode);
+      const findActualNodeIndex = actualTree
+        .slice(index)
+        .findIndex((node) => node.type === expectedBlockData.type);
+      const actualNodeIndex =
+        findActualNodeIndex < 0 ? actualTree.length : findActualNodeIndex;
+      if (actualNodeIndex > index) {
+        await actualTree.slice(index, actualNodeIndex).reduce((p, c) => {
+          return p.then(async () => {
+            notionClient.blocks.delete({ block_id: c.id });
+          });
+        }, Promise.resolve());
+        actualTree.splice(index, actualNodeIndex - index);
+      }
+
       if (actualTree.length > index) {
         const actualNode = actualTree[index];
         const block_id = actualNode.id;
@@ -269,6 +292,7 @@ const applyState = async (
               level: 1,
               children: [],
               id: newActualNode.id,
+              type: newActualNode.type,
             });
           })
           .catch((e) =>
@@ -295,4 +319,4 @@ const applyState = async (
   return promises.reduce((p, c) => p.then(c), Promise.resolve<unknown>(""));
 };
 
-export default applyState;
+export default decodeState;
