@@ -8,6 +8,24 @@ import {
   RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import encodeState from "src/utils/encodeState";
+import { blockContentToAtJson } from "src/utils/toAtJson";
+
+const getAllPages = async (
+  notionClient: NotionClient,
+  start_cursor?: string
+): Promise<PageObjectResponse[]> => {
+  const results = await notionClient.search({
+    filter: { property: "object", value: "page" },
+    start_cursor,
+  });
+  const pages = results.results.map((r) => r as PageObjectResponse);
+  if (results.next_cursor && results.has_more) {
+    return getAllPages(notionClient, results.next_cursor).then((more) =>
+      pages.concat(more)
+    );
+  }
+  return pages;
+};
 
 const backend = createApiBackendPostHandler({
   getDecodeState:
@@ -154,6 +172,37 @@ const backend = createApiBackendPostHandler({
             url: "",
           };
     },
+  getCommandLibrary: ({ accessToken }) => {
+    new NotionClient({
+      auth: accessToken,
+    });
+    return {};
+  },
+  getListWorkflows: async ({ accessToken, notebookUuid }) => {
+    const notionClient = new NotionClient({
+      auth: accessToken,
+    });
+    const allPages = await getAllPages(notionClient);
+    const workflows = allPages
+      .filter((p) => p.properties["SamePage"])
+      .map((p) => {
+        const titleProperty = Object.values(p.properties).find(
+          (v) => v.type === "title"
+        );
+        return {
+          uuid: p.id,
+          notebookPageId: p.id,
+          title: titleProperty
+            ? blockContentToAtJson({
+                // @ts-ignore - guaranteed to be title
+                rich_text: titleProperty.title,
+                notebookUuid,
+              })
+            : { content: p.id, annotations: [] },
+        };
+      });
+    return { workflows };
+  },
 });
 
 export default backend;
