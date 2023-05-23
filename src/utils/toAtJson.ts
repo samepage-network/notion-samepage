@@ -125,7 +125,7 @@ export const blockContentToAtJson = ({
 const toAtJson = ({
   block_id,
   startIndex = 0,
-  level = 0,
+  level = 1,
   notebookUuid,
   notionClient,
 }: {
@@ -305,7 +305,7 @@ const toAtJson = ({
             ? await toAtJson({
                 block_id: n.id,
                 level: level + 1,
-                startIndex: content.length,
+                startIndex: offset + content.length,
                 notebookUuid,
                 notionClient,
               })
